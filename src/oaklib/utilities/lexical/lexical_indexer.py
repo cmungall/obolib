@@ -257,6 +257,7 @@ def lexical_index_to_sssom(
     ruleset: MappingRuleCollection = None,
     meta: Optional[Dict[str, t.Any]] = None,
     prefix_map: Union[None, Converter, t.Mapping[str, str]] = None,
+    extended_prefix_map: t.Iterable[Dict[str, t.Any]] = None,
     subjects: Collection[CURIE] = None,
     objects: Collection[CURIE] = None,
     symmetric: bool = False,
@@ -275,6 +276,9 @@ def lexical_index_to_sssom(
     :param ensure_strict_prefixes: If true, prefixes & mappings in SSSOM MappingSetDataFrame will be filtred.
     :return: SSSOM MappingSetDataFrame object.
     """
+    if prefix_map and extended_prefix_map:
+        raise ValueError("Can only pass prefix_map or extended_prefix_map, but not both.")
+
     mappings = []
     logging.info("Converting lexical index to SSSOM")
     if subjects:
@@ -323,7 +327,11 @@ def lexical_index_to_sssom(
 
     converter = curies.chain(
         [
-            Converter.from_prefix_map((meta or {}).pop(CURIE_MAP, {})),
+            Converter.from_extended_prefix_map(extended_prefix_map)
+            if extended_prefix_map
+            else Converter.from_prefix_map(prefix_map)
+            if prefix_map
+            else Converter.from_prefix_map((meta or {}).pop(CURIE_MAP, {})),
             ensure_converter(prefix_map, use_defaults=False),
             oi.converter,
         ]
